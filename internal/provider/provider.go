@@ -166,6 +166,7 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 func (p *appsignalProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewViewerDataSource,
+		NewAppDataSource,
 	}
 }
 
