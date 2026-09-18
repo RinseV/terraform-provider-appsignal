@@ -55,10 +55,21 @@ To compile the provider, run `go install`. This will build the provider and put 
 
 To generate or update documentation, run `make generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
+### Testing
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
+`make testacc` runs the acceptance tests against the real AppSignal API, so it
+needs a token. Copy `.env.example` to `.env` and fill in a personal AppSignal
+API token. `.env` is gitignored, and the token is read from the environment
+rather than written into any test configuration, so it stays out of the
+repository and out of the Terraform state the tests write.
 
 ```shell
+cp .env.example .env
+$EDITOR .env
 make testacc
 ```
+
+Without `APPSIGNAL_TOKEN` the acceptance tests skip, so they are meant to be run
+by hand rather than in CI.
+
+*Note:* acceptance tests create real resources, and often cost money to run.
