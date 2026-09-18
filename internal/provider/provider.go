@@ -215,5 +215,6 @@ func (p *appsignalProvider) DataSources(_ context.Context) []func() datasource.D
 func (p *appsignalProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAppResource,
+		NewLogSourceResource,
 	}
 }
