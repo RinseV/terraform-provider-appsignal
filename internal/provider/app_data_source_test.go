@@ -17,7 +17,7 @@ func TestAccAppDataSource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Read testing.
 			{
-				Config: providerConfig + `data "appsignal_app" "test" { id = "69808b0ce5250a3229a9f634" }`,
+				Config: providerConfig + `data "appsignal_app" "test" { id = "6aad24d1ba6bc351255e7cb5" }`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.appsignal_app.test", "id"),
 					resource.TestCheckResourceAttrSet("data.appsignal_app.test", "name"),
