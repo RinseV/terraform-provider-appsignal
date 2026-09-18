@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -36,8 +38,9 @@ type appResource struct {
 type appResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
-	LastUpdated types.String `tfsdk:"last_updated"`
 	Environment types.String `tfsdk:"environment"`
+	CreatedAt   types.String `tfsdk:"created_at"`
+	UpdatedAt   types.String `tfsdk:"updated_at"`
 }
 
 // Configure adds the provider configured client to the resource.
@@ -75,17 +78,31 @@ func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 			"id": schema.StringAttribute{
 				Description: "The ID of the app.",
 				Computed:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the app.",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"environment": schema.StringAttribute{
 				Description: "The environment of the app.",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"created_at": schema.StringAttribute{
+				Description: "The timestamp when the app was created.",
+				Computed:    true,
+			},
+			"updated_at": schema.StringAttribute{
+				Description: "The timestamp when the app was updated.",
+				Computed:    true,
 			},
 		},
 	}
@@ -117,7 +134,8 @@ func (r *appResource) Create(ctx context.Context, req resource.CreateRequest, re
 	plan.ID = types.StringValue(app.ID)
 	plan.Name = types.StringValue(app.Name)
 	plan.Environment = types.StringValue(app.Environment)
-	plan.LastUpdated = types.StringValue(app.UpdatedAt.Format(time.RFC3339))
+	plan.CreatedAt = types.StringValue(app.CreatedAt.Format(time.RFC3339))
+	plan.UpdatedAt = types.StringValue(app.UpdatedAt.Format(time.RFC3339))
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -146,6 +164,8 @@ func (r *appResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	state.Name = types.StringValue(app.Name)
 	state.Environment = types.StringValue(app.Environment)
+	state.CreatedAt = types.StringValue(app.CreatedAt.Format(time.RFC3339))
+	state.UpdatedAt = types.StringValue(app.UpdatedAt.Format(time.RFC3339))
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -155,7 +175,11 @@ func (r *appResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *appResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+//
+// The AppSignal API exposes no mutation to update an existing app, so every
+// configurable attribute is marked RequiresReplace and this method is never
+// called. It only exists to satisfy the resource.Resource interface.
+func (r *appResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
 }
 
 // Delete deletes the resource and removes the Terraform state on success.

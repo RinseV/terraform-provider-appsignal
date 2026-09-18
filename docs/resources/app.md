@@ -29,8 +29,9 @@ resource "appsignal_app" "example" {
 
 ### Read-Only
 
+- `created_at` (String) The timestamp when the app was created.
 - `id` (String) The ID of the app.
-- `last_updated` (String)
+- `updated_at` (String) The timestamp when the app was updated.
 
 ## Import
 

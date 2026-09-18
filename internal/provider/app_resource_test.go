@@ -27,14 +27,15 @@ resource "appsignal_app" "test" {
 					resource.TestCheckResourceAttr("appsignal_app.test", "name", "my-test-app"),
 					resource.TestCheckResourceAttr("appsignal_app.test", "environment", "testing"),
 					resource.TestCheckResourceAttrSet("appsignal_app.test", "id"),
+					resource.TestCheckResourceAttrSet("appsignal_app.test", "created_at"),
+					resource.TestCheckResourceAttrSet("appsignal_app.test", "updated_at"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:            "appsignal_app.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"last_updated"},
+				ResourceName:      "appsignal_app.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			// Delete testing automatically occurs in TestCase
 		},
