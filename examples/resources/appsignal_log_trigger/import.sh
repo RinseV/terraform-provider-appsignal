@@ -1,0 +1,1 @@
+terraform import appsignal_log_trigger.example "<app_id>,<log_trigger_id>"
