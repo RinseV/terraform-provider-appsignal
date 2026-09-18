@@ -41,8 +41,14 @@ type appsignalProvider struct {
 
 // appsignalProviderModel maps provider schema data to a Go type.
 type appsignalProviderModel struct {
-	Host  types.String `tfsdk:"host"`
-	Token types.String `tfsdk:"token"`
+	Host             types.String `tfsdk:"host"`
+	Token            types.String `tfsdk:"token"`
+	OrganizationSlug types.String `tfsdk:"organization_slug"`
+}
+
+type appsignalProviderData struct {
+	client           *appsignal.Client
+	organizationSlug string
 }
 
 // Metadata returns the provider type name.
@@ -63,6 +69,10 @@ func (p *appsignalProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 				Description: "Token for AppSignal API. May also be provided via APPSIGNAL_TOKEN environment variable.",
 				Optional:    true,
 				Sensitive:   true,
+			},
+			"organization_slug": schema.StringAttribute{
+				Description: "Slug of the organization to manage. Every data source and resource works in this organization. May also be provided via APPSIGNAL_ORGANIZATION_SLUG environment variable.",
+				Optional:    true,
 			},
 		},
 	}
@@ -91,6 +101,15 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if config.OrganizationSlug.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("organization_slug"),
+			"Unknown AppSignal Organization Slug",
+			"The provider cannot create the AppSignal API client as there is an unknown configuration value for the AppSignal organization slug. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the APPSIGNAL_ORGANIZATION_SLUG environment variable.",
+		)
+	}
+
 	if config.Token.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
@@ -109,6 +128,7 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 
 	host := os.Getenv("APPSIGNAL_HOST")
 	token := os.Getenv("APPSIGNAL_TOKEN")
+	organizationSlug := os.Getenv("APPSIGNAL_ORGANIZATION_SLUG")
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -116,6 +136,10 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 
 	if !config.Token.IsNull() {
 		token = config.Token.ValueString()
+	}
+
+	if !config.OrganizationSlug.IsNull() {
+		organizationSlug = config.OrganizationSlug.ValueString()
 	}
 
 	// If any of the expected configurations are missing, return
@@ -141,12 +165,23 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if organizationSlug == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("organization_slug"),
+			"Missing AppSignal Organization Slug",
+			"The provider cannot manage AppSignal resources as there is a missing or empty value for the AppSignal organization slug. "+
+				"Set the organization_slug value in the configuration or use the APPSIGNAL_ORGANIZATION_SLUG environment variable. "+
+				"If either is already set, ensure the value is not empty.",
+		)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	ctx = tflog.SetField(ctx, "appsignal_host", host)
 	ctx = tflog.SetField(ctx, "appsignal_token", token)
+	ctx = tflog.SetField(ctx, "appsignal_organization_slug", organizationSlug)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "appsignal_token")
 
 	tflog.Debug(ctx, "Creating AppSignal client")
@@ -154,10 +189,15 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 	// Create a new AppSignal client using the configuration values
 	client := appsignal.NewClient(host, token)
 
-	// Make the AppSignal client available during DataSource and Resource
-	// type Configure methods.
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	// Make the AppSignal client and the default organization slug available
+	// during DataSource and Resource type Configure methods.
+	providerData := &appsignalProviderData{
+		client:           client,
+		organizationSlug: organizationSlug,
+	}
+
+	resp.DataSourceData = providerData
+	resp.ResourceData = providerData
 
 	tflog.Info(ctx, "Configured AppSignal client", map[string]any{"success": true})
 }

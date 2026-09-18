@@ -1,4 +1,2 @@
-# Get organization by slug
-data "appsignal_organization" "org" {
-  slug = "my-org"
-}
+# Get the organization configured on the provider
+data "appsignal_organization" "org" {}

@@ -29,15 +29,15 @@ func NewAppResource() resource.Resource {
 
 // appResource is the resource implementation.
 type appResource struct {
-	client *appsignal.Client
+	client           *appsignal.Client
+	organizationSlug string
 }
 
 type appResourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	LastUpdated      types.String `tfsdk:"last_updated"`
-	Environment      types.String `tfsdk:"environment"`
-	OrganizationSlug types.String `tfsdk:"organization_slug"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	LastUpdated types.String `tfsdk:"last_updated"`
+	Environment types.String `tfsdk:"environment"`
 }
 
 // Configure adds the provider configured client to the resource.
@@ -48,18 +48,19 @@ func (r *appResource) Configure(_ context.Context, req resource.ConfigureRequest
 		return
 	}
 
-	client, ok := req.ProviderData.(*appsignal.Client)
+	providerData, ok := req.ProviderData.(*appsignalProviderData)
 
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *appsignal.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *appsignalProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
 	}
 
-	r.client = client
+	r.client = providerData.client
+	r.organizationSlug = providerData.organizationSlug
 }
 
 // Metadata returns the resource type name.
@@ -86,10 +87,6 @@ func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				Description: "The environment of the app.",
 				Required:    true,
 			},
-			"organization_slug": schema.StringAttribute{
-				Description: "The organization slug.",
-				Required:    true,
-			},
 		},
 	}
 }
@@ -106,7 +103,7 @@ func (r *appResource) Create(ctx context.Context, req resource.CreateRequest, re
 	var input appsignal.CreateAppInput
 	input.Name = plan.Name.ValueString()
 	input.Environment = plan.Environment.ValueString()
-	input.OrganizationSlug = plan.OrganizationSlug.ValueString()
+	input.OrganizationSlug = r.organizationSlug
 
 	app, err := r.client.CreateApp(ctx, input)
 	if err != nil {

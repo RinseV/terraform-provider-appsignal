@@ -14,9 +14,8 @@ description: |-
 
 ```terraform
 resource "appsignal_app" "example" {
-  name              = "my-example-app"
-  environment       = "production"
-  organization_slug = "my-org"
+  name        = "my-example-app"
+  environment = "production"
 }
 ```
 
@@ -27,7 +26,6 @@ resource "appsignal_app" "example" {
 
 - `environment` (String) The environment of the app.
 - `name` (String) The name of the app.
-- `organization_slug` (String) The organization slug.
 
 ### Read-Only
 

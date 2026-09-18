@@ -16,6 +16,8 @@ description: |-
 provider "appsignal" {
   host  = "https://appsignal.com/graphql"
   token = "abcdef..."
+
+  organization_slug = "my-org"
 }
 ```
 
@@ -25,4 +27,5 @@ provider "appsignal" {
 ### Optional
 
 - `host` (String) URI for AppSignal API. May also be provided via APPSIGNAL_HOST environment variable.
+- `organization_slug` (String) Slug of the organization to manage. Every data source and resource works in this organization. May also be provided via APPSIGNAL_ORGANIZATION_SLUG environment variable.
 - `token` (String, Sensitive) Token for AppSignal API. May also be provided via APPSIGNAL_TOKEN environment variable.

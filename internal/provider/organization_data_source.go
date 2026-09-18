@@ -22,6 +22,10 @@ func NewOrganizationDataSource() datasource.DataSource { return &organizationDat
 
 type organizationDataSource struct {
 	client *appsignal.Client
+
+	// organizationSlug is the organization to look up, configured on the
+	// provider.
+	organizationSlug string
 }
 
 type organizationDataSourceModel struct {
@@ -38,17 +42,18 @@ func (d *organizationDataSource) Configure(_ context.Context, req datasource.Con
 		return
 	}
 
-	client, ok := req.ProviderData.(*appsignal.Client)
+	providerData, ok := req.ProviderData.(*appsignalProviderData)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *appsignal.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *appsignalProviderData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
 	}
 
-	d.client = client
+	d.client = providerData.client
+	d.organizationSlug = providerData.organizationSlug
 }
 
 // Metadata returns the data source type name.
@@ -59,11 +64,11 @@ func (d *organizationDataSource) Metadata(_ context.Context, req datasource.Meta
 // Schema defines the schema for the data source.
 func (d *organizationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Use this data source to look up an existing organization by slug.",
+		Description: "Use this data source to look up the organization configured on the provider.",
 		Attributes: map[string]schema.Attribute{
 			"slug": schema.StringAttribute{
-				Description: "The slug of the organization. Must be specified.",
-				Required:    true,
+				Description: "The slug of the organization, as configured on the provider.",
+				Computed:    true,
 			},
 			"id": schema.StringAttribute{
 				Description: "The organization id.",
@@ -87,7 +92,7 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	organization, err := d.client.GetOrganization(ctx, state.Slug.ValueString())
+	organization, err := d.client.GetOrganization(ctx, d.organizationSlug)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AppSignal Organization",
@@ -97,7 +102,7 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	state = organizationDataSourceModel{
-		Slug: state.Slug,
+		Slug: types.StringValue(d.organizationSlug),
 		ID:   types.StringValue(organization.ID),
 		Name: types.StringValue(organization.Name),
 	}

@@ -10,6 +10,8 @@ import (
 )
 
 func TestAccAppResource(t *testing.T) {
+	testAccPreCheck(t)
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -17,9 +19,8 @@ func TestAccAppResource(t *testing.T) {
 			{
 				Config: providerConfig + `
 resource "appsignal_app" "test" {
-  name = "my-test-app"
-	environment = "testing"
-	organization_slug = "terraform-test"
+  name        = "my-test-app"
+  environment = "testing"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -33,7 +34,7 @@ resource "appsignal_app" "test" {
 				ResourceName:            "appsignal_app.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"last_updated", "organization_slug"},
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},

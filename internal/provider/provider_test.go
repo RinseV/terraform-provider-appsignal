@@ -21,7 +21,8 @@ import (
 // state the test harness writes.
 const providerConfig = `
 provider "appsignal" {
-  host = "https://appsignal.com/graphql"
+  host              = "https://appsignal.com/graphql"
+  organization_slug = "terraform-test"
 }
 `
 
