@@ -1,0 +1,186 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package provider
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/RinseV/appsignal-client-go"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource                = &appResource{}
+	_ resource.ResourceWithConfigure   = &appResource{}
+	_ resource.ResourceWithImportState = &appResource{}
+)
+
+// NewAppResource is a helper function to simplify the provider implementation.
+func NewAppResource() resource.Resource {
+	return &appResource{}
+}
+
+// appResource is the resource implementation.
+type appResource struct {
+	client *appsignal.Client
+}
+
+type appResourceModel struct {
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	LastUpdated      types.String `tfsdk:"last_updated"`
+	Environment      types.String `tfsdk:"environment"`
+	OrganizationSlug types.String `tfsdk:"organization_slug"`
+}
+
+// Configure adds the provider configured client to the resource.
+func (r *appResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Add a nil check when handling ProviderData because Terraform
+	// sets that data after it calls the ConfigureProvider RPC.
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*appsignal.Client)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *appsignal.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+}
+
+// Metadata returns the resource type name.
+func (r *appResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_app"
+}
+
+// Schema defines the schema for the resource.
+func (r *appResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The ID of the app.",
+				Computed:    true,
+			},
+			"last_updated": schema.StringAttribute{
+				Computed: true,
+			},
+			"name": schema.StringAttribute{
+				Description: "The name of the app.",
+				Required:    true,
+			},
+			"environment": schema.StringAttribute{
+				Description: "The environment of the app.",
+				Required:    true,
+			},
+			"organization_slug": schema.StringAttribute{
+				Description: "The organization slug.",
+				Required:    true,
+			},
+		},
+	}
+}
+
+// Create creates the resource and sets the initial Terraform state.
+func (r *appResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan appResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var input appsignal.CreateAppInput
+	input.Name = plan.Name.ValueString()
+	input.Environment = plan.Environment.ValueString()
+	input.OrganizationSlug = plan.OrganizationSlug.ValueString()
+
+	app, err := r.client.CreateApp(ctx, input)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating app",
+			"Could not create app, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	plan.ID = types.StringValue(app.ID)
+	plan.Name = types.StringValue(app.Name)
+	plan.Environment = types.StringValue(app.Environment)
+	plan.LastUpdated = types.StringValue(app.UpdatedAt.Format(time.RFC3339))
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (r *appResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state appResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	app, err := r.client.GetApp(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading AppSignal App",
+			"Could not read AppSignal app ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
+	state.Name = types.StringValue(app.Name)
+	state.Environment = types.StringValue(app.Environment)
+
+	diags = resp.State.Set(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *appResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *appResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state appResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_, err := r.client.DeleteApp(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Deleting AppSignal App",
+			"Could not delete app, unexpected error: "+err.Error(),
+		)
+		return
+	}
+}
+
+func (r *appResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Retrieve import ID and save to id attribute
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
