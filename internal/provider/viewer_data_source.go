@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -63,13 +66,16 @@ func (d *viewerDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "The ID of the viewer.",
+				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Description: "The name of the viewer.",
+				Computed:    true,
 			},
 			"email": schema.StringAttribute{
-				Computed: true,
+				Description: "The email of the viewer.",
+				Computed:    true,
 			},
 		},
 	}

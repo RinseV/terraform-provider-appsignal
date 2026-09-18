@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -52,11 +55,13 @@ func (p *appsignalProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional: true,
+				Description: "URI for AppSignal API. May also be provided via APPSIGNAL_HOST environment variable.",
+				Optional:    true,
 			},
 			"token": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
+				Description: "Token for AppSignal API. May also be provided via APPSIGNAL_TOKEN environment variable.",
+				Optional:    true,
+				Sensitive:   true,
 			},
 		},
 	}
