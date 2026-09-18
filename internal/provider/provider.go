@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -68,6 +69,8 @@ func (p *appsignalProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 }
 
 func (p *appsignalProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring AppSignal client")
+
 	// Retrieve provider data from configuration
 	var config appsignalProviderModel
 	diags := req.Config.Get(ctx, &config)
@@ -142,6 +145,12 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "appsignal_host", host)
+	ctx = tflog.SetField(ctx, "appsignal_token", token)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "appsignal_token")
+
+	tflog.Debug(ctx, "Creating AppSignal client")
+
 	// Create a new AppSignal client using the configuration values
 	client := appsignal.NewClient(host, token)
 
@@ -149,6 +158,8 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 	// type Configure methods.
 	resp.DataSourceData = client
 	resp.ResourceData = client
+
+	tflog.Info(ctx, "Configured AppSignal client", map[string]any{"success": true})
 }
 
 // DataSources defines the data sources implemented in the provider.
