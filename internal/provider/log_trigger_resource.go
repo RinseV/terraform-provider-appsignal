@@ -36,7 +36,7 @@ func NewLogTriggerResource() resource.Resource {
 	return &logTriggerResource{}
 }
 
-// logTriggerResource is the resource implementation
+// logTriggerResource is the resource implementation.
 type logTriggerResource struct {
 	client       *appsignal.Client
 	organization string
@@ -85,7 +85,7 @@ type logTriggerResourceModel struct {
 	NotifierIDs              types.Set    `tfsdk:"notifier_ids"`
 }
 
-// applyLogTrigger copies the values AppSignal owns into the model
+// applyLogTrigger copies the values AppSignal owns into the model.
 func (m *logTriggerResourceModel) applyLogTrigger(logTrigger *appsignal.LogTrigger) {
 	m.ID = types.StringValue(logTrigger.ID)
 	m.Name = types.StringValue(logTrigger.Name)

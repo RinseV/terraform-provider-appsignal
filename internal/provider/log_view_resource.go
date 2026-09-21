@@ -32,7 +32,7 @@ var (
 
 func NewLogViewResource() resource.Resource { return &logViewResource{} }
 
-// logViewResource is the resource implementation
+// logViewResource is the resource implementation.
 type logViewResource struct {
 	client       *appsignal.Client
 	organization string
@@ -64,7 +64,7 @@ type logViewResourceModel struct {
 	SourceIDs  types.Set    `tfsdk:"source_ids"`
 }
 
-// applyLogView copies the values AppSignal owns into the model
+// applyLogView copies the values AppSignal owns into the model.
 func (m *logViewResourceModel) applyLogView(logView *appsignal.LogView) {
 	m.ID = types.StringValue(logView.ID)
 	m.Name = types.StringValue(logView.Name)
