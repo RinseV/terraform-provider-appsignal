@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -84,22 +83,6 @@ type logTriggerResourceModel struct {
 	Order                    types.Int32  `tfsdk:"order"`
 	Severities               types.Set    `tfsdk:"severities"`
 	NotifierIDs              types.Set    `tfsdk:"notifier_ids"`
-	Notifiers                types.Set    `tfsdk:"notifiers"`
-}
-
-// logTriggerNotifierModel is one element of the computed notifiers attribute.
-type logTriggerNotifierModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
-	Icon types.String `tfsdk:"icon"`
-}
-
-var logTriggerNotifierObjectType = types.ObjectType{
-	AttrTypes: map[string]attr.Type{
-		"id":   types.StringType,
-		"name": types.StringType,
-		"icon": types.StringType,
-	},
 }
 
 // applyLogTrigger copies the values AppSignal owns into the model.
@@ -108,7 +91,7 @@ var logTriggerNotifierObjectType = types.ObjectType{
 // are already correct in the plan, and Terraform requires the applied state to
 // match the plan exactly for every value that is not unknown. Read overwrites
 // them separately, because there drift is what we are looking for.
-func (m *logTriggerResourceModel) applyLogTrigger(ctx context.Context, logTrigger *appsignal.LogTrigger) diag.Diagnostics {
+func (m *logTriggerResourceModel) applyLogTrigger(logTrigger *appsignal.LogTrigger) {
 	m.ID = types.StringValue(logTrigger.ID)
 	m.Name = types.StringValue(logTrigger.Name)
 	m.Query = types.StringValue(logTrigger.Query)
@@ -116,14 +99,6 @@ func (m *logTriggerResourceModel) applyLogTrigger(ctx context.Context, logTrigge
 	m.NotificationOptions = logTriggerNotificationOptionValue(logTrigger.NotificationOptions)
 	m.NotificationTriggerValue = types.Int32PointerValue(logTrigger.NotificationTriggerValue)
 	m.Order = types.Int32Value(logTrigger.Order)
-
-	notifiers, diags := logTriggerNotifiersValue(ctx, logTrigger.Notifiers)
-	if diags.HasError() {
-		return diags
-	}
-	m.Notifiers = notifiers
-
-	return diags
 }
 
 // Configure adds the provider configured client to the resource.
@@ -236,29 +211,6 @@ func (r *logTriggerResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				ElementType: types.StringType,
 				Default:     setdefault.StaticValue(types.SetValueMust(types.StringType, []attr.Value{})),
 			},
-			"notifiers": schema.SetNestedAttribute{
-				Description: "The notifiers this trigger notifies, with their names resolved by AppSignal.",
-				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Description: "The ID of the notifier.",
-							Computed:    true,
-						},
-						"name": schema.StringAttribute{
-							Description: "The name of the notifier.",
-							Computed:    true,
-						},
-						"icon": schema.StringAttribute{
-							Description: "The icon of the notifier.",
-							Computed:    true,
-						},
-					},
-				},
-				PlanModifiers: []planmodifier.Set{
-					notifiersUnknownOnNotifierIDsChange{},
-				},
-			},
 			"order": schema.Int32Attribute{
 				Description: "The order of the log trigger.",
 				Computed:    true,
@@ -308,10 +260,7 @@ func (r *logTriggerResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(plan.applyLogTrigger(ctx, logTrigger)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	plan.applyLogTrigger(logTrigger)
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -369,10 +318,7 @@ func (r *logTriggerResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(state.applyLogTrigger(ctx, logTrigger)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	state.applyLogTrigger(logTrigger)
 
 	state.Description = types.StringPointerValue(logTrigger.Description)
 	if state.Description.ValueString() == "" {
@@ -437,10 +383,7 @@ func (r *logTriggerResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(plan.applyLogTrigger(ctx, logTrigger)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	plan.applyLogTrigger(logTrigger)
 
 	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -498,58 +441,6 @@ func logTriggerNotificationOptionPointer(value types.String) *appsignal.LogTrigg
 	option := appsignal.LogTriggerNotificationOption(value.ValueString())
 
 	return &option
-}
-
-// logTriggerNotifiersValue converts the notifiers AppSignal returned into the
-// computed set of objects.
-func logTriggerNotifiersValue(ctx context.Context, notifiers []*appsignal.Notifier) (types.Set, diag.Diagnostics) {
-	models := make([]logTriggerNotifierModel, 0, len(notifiers))
-	for _, notifier := range notifiers {
-		if notifier == nil {
-			continue
-		}
-
-		models = append(models, logTriggerNotifierModel{
-			ID:   types.StringValue(notifier.ID),
-			Name: types.StringValue(notifier.Name),
-			Icon: types.StringValue(notifier.Icon),
-		})
-	}
-
-	return types.SetValueFrom(ctx, logTriggerNotifierObjectType, models)
-}
-
-// notifiersUnknownOnNotifierIDsChange marks the derived notifiers attribute
-// unknown whenever the configured notifier IDs change. Terraform proposes the
-// prior state for a computed attribute, so without this the plan would promise
-// the old notifiers and apply would return different ones, which Terraform
-// rejects as an inconsistent result.
-type notifiersUnknownOnNotifierIDsChange struct{}
-
-func (m notifiersUnknownOnNotifierIDsChange) Description(_ context.Context) string {
-	return "Recomputed when notifier_ids changes."
-}
-
-func (m notifiersUnknownOnNotifierIDsChange) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
-}
-
-func (m notifiersUnknownOnNotifierIDsChange) PlanModifySet(ctx context.Context, req planmodifier.SetRequest, resp *planmodifier.SetResponse) {
-	// On create there is no prior state to keep, and on destroy there is no plan.
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-
-	var planned, current types.Set
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("notifier_ids"), &planned)...)
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("notifier_ids"), &current)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if !planned.Equal(current) {
-		resp.PlanValue = types.SetUnknown(logTriggerNotifierObjectType)
-	}
 }
 
 func logTriggerNotificationOptionValue(option *appsignal.LogTriggerNotificationOption) types.String {

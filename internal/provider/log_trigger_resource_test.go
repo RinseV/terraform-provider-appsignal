@@ -79,7 +79,6 @@ func TestAccLogTriggerResource(t *testing.T) {
 					resource.TestCheckResourceAttr("appsignal_log_trigger.test", "notification_options", "ALWAYS"),
 					resource.TestCheckResourceAttr("appsignal_log_trigger.test", "notification_trigger_value", "1"),
 					resource.TestCheckResourceAttr("appsignal_log_trigger.test", "notifier_ids.#", "0"),
-					resource.TestCheckResourceAttr("appsignal_log_trigger.test", "notifiers.#", "0"),
 					resource.TestCheckResourceAttrSet("appsignal_log_trigger.test", "id"),
 					resource.TestCheckResourceAttrSet("appsignal_log_trigger.test", "action_type"),
 					resource.TestCheckResourceAttrSet("appsignal_log_trigger.test", "order"),

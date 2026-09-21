@@ -60,17 +60,7 @@ resource "appsignal_log_trigger" "example" {
 
 - `action_type` (String) The action the log trigger performs. Assigned by AppSignal, one of: `TRIGGER`, `FILTER`, `METRICS`.
 - `id` (String) The ID of the log trigger.
-- `notifiers` (Attributes Set) The notifiers this trigger notifies, with their names resolved by AppSignal. (see [below for nested schema](#nestedatt--notifiers))
 - `order` (Number) The order of the log trigger.
-
-<a id="nestedatt--notifiers"></a>
-### Nested Schema for `notifiers`
-
-Read-Only:
-
-- `icon` (String) The icon of the notifier.
-- `id` (String) The ID of the notifier.
-- `name` (String) The name of the notifier.
 
 ## Import
 
