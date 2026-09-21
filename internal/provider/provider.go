@@ -17,6 +17,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+// defaultHost is the AppSignal API endpoint used when the host is not
+// configured on the provider or through the environment.
+const defaultHost = "https://appsignal.com/graphql"
+
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &appsignalProvider{}
@@ -65,7 +69,7 @@ func (p *appsignalProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Description: "URI for AppSignal API. May also be provided via APPSIGNAL_HOST environment variable.",
+				Description: "URI for AppSignal API. Defaults to " + defaultHost + ". May also be provided via APPSIGNAL_HOST environment variable.",
 				Optional:    true,
 			},
 			"token": schema.StringAttribute{
@@ -127,9 +131,14 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 	}
 
 	// Default values to environment variables, but override
-	// with Terraform configuration value if set.
+	// with Terraform configuration value if set. The host falls back to the
+	// AppSignal API endpoint when neither is set.
 
-	host := os.Getenv("APPSIGNAL_HOST")
+	host := defaultHost
+	if envHost := os.Getenv("APPSIGNAL_HOST"); envHost != "" {
+		host = envHost
+	}
+
 	token := os.Getenv("APPSIGNAL_TOKEN")
 	organization := os.Getenv("APPSIGNAL_ORGANIZATION")
 
@@ -151,10 +160,9 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 	if host == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
-			"Missing AppSignal API Host",
-			"The provider cannot create the AppSignal API client as there is a missing or empty value for the AppSignal API host. "+
-				"Set the host value in the configuration or use the APPSIGNAL_HOST environment variable. "+
-				"If either is already set, ensure the value is not empty.",
+			"Empty AppSignal API Host",
+			"The provider cannot create the AppSignal API client as there is an empty value for the AppSignal API host. "+
+				"Remove the host value from the configuration to use the default of "+defaultHost+", or set it to a non-empty value.",
 		)
 	}
 

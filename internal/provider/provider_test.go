@@ -18,10 +18,11 @@ import (
 // configuration so the AppSignal client is properly configured. The token is
 // deliberately left out: the provider reads APPSIGNAL_TOKEN from the
 // environment, which keeps it out of the test source and out of any Terraform
-// state the test harness writes.
+// state the test harness writes. The host is left out as well, so the tests
+// run against the default endpoint unless APPSIGNAL_HOST points them
+// elsewhere.
 const providerConfig = `
 provider "appsignal" {
-  host              = "https://appsignal.com/graphql"
   organization = "terraform-test"
 }
 `

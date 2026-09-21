@@ -14,7 +14,6 @@ description: |-
 ```terraform
 # Configuration-based authentication
 provider "appsignal" {
-  host  = "https://appsignal.com/graphql"
   token = "abcdef..."
 
   organization = "my-org"
@@ -26,6 +25,6 @@ provider "appsignal" {
 
 ### Optional
 
-- `host` (String) URI for AppSignal API. May also be provided via APPSIGNAL_HOST environment variable.
+- `host` (String) URI for AppSignal API. Defaults to https://appsignal.com/graphql. May also be provided via APPSIGNAL_HOST environment variable.
 - `organization` (String) Slug of the organization to manage, not its display name. The slug is the organization part of the AppSignal URL: for `https://appsignal.com/my-org`, the slug is `my-org`. Every data source and resource works in this organization. May also be provided via APPSIGNAL_ORGANIZATION environment variable.
 - `token` (String, Sensitive) Token for AppSignal API. May also be provided via APPSIGNAL_TOKEN environment variable.
