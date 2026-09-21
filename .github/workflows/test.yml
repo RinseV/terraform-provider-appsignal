@@ -1,0 +1,95 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - run: go mod download
+
+      - run: make build
+
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+  generate:
+    name: Generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.15.9
+          terraform_wrapper: false
+
+      - run: make generate
+
+      - name: git diff
+        run: |
+          git diff --compact-summary --exit-code || \
+            (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
+
+  testacc:
+    name: Acceptance tests
+    needs: build
+    runs-on: ubuntu-latest
+    environment: e2e
+    timeout-minutes: 30
+    concurrency:
+      group: e2e
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.15.9
+          terraform_wrapper: false
+
+      - run: go mod download
+
+      - name: Check the API token is set
+        env:
+          APPSIGNAL_TOKEN: ${{ secrets.APPSIGNAL_TOKEN }}
+        run: |
+          if [ -z "$APPSIGNAL_TOKEN" ]; then
+            echo "::error::APPSIGNAL_TOKEN is not set in the e2e environment"
+            exit 1
+          fi
+
+      - run: make testacc
+        env:
+          APPSIGNAL_TOKEN: ${{ secrets.APPSIGNAL_TOKEN }}
