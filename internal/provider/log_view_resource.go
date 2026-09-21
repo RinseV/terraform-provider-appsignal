@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -39,9 +38,6 @@ type logViewResource struct {
 	organizationSlug string
 }
 
-// logViewDefaultLineHeight is the line height AppSignal assigns when the
-// mutation leaves it out. The schema defaults to the same value so the plan
-// can show it instead of "known after apply".
 const logViewDefaultLineHeight = "0"
 
 var logViewSeverities = []string{
@@ -68,13 +64,7 @@ type logViewResourceModel struct {
 	SourceIDs  types.Set    `tfsdk:"source_ids"`
 }
 
-// applyLogView copies the values AppSignal owns into the model.
-//
-// The query, the line height and the three set attributes are left alone on
-// purpose. They all default to a known value, so they are already correct in
-// the plan, and Terraform requires the applied state to match the plan exactly
-// for every value that is not unknown. Read overwrites them separately,
-// because there drift is what we are looking for.
+// applyLogView copies the values AppSignal owns into the model
 func (m *logViewResourceModel) applyLogView(logView *appsignal.LogView) {
 	m.ID = types.StringValue(logView.ID)
 	m.Name = types.StringValue(logView.Name)
@@ -235,26 +225,25 @@ func (r *logViewResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	// A log view that AppSignal no longer knows about has to leave the state,
-	// so Terraform plans it as a create again.
+	// Gone from AppSignal, so Terraform plans it as a create again.
 	if logView == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	columns, columnsDiags := logViewStringSetValue(ctx, logView.Columns)
+	columns, columnsDiags := types.SetValueFrom(ctx, types.StringType, logView.Columns)
 	resp.Diagnostics.Append(columnsDiags...)
-	sourceIDs, sourceIDsDiags := logViewStringSetValue(ctx, logView.SourceIDs)
+	sourceIDs, sourceIDsDiags := types.SetValueFrom(ctx, types.StringType, logView.SourceIDs)
 	resp.Diagnostics.Append(sourceIDsDiags...)
-	severities, severitiesDiags := logViewSeveritySetValue(ctx, logView.Severities)
+	severities, severitiesDiags := types.SetValueFrom(ctx, types.StringType, logView.Severities)
 	resp.Diagnostics.Append(severitiesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	state.applyLogView(logView)
-	state.Query = logViewQueryValue(logView.Query)
-	state.LineHeight = logViewLineHeightValue(logView.LineHeight)
+	state.Query = types.StringValue(logView.Query)
+	state.LineHeight = types.StringValue(logView.LineHeight)
 	state.Columns = columns
 	state.SourceIDs = sourceIDs
 	state.Severities = severities
@@ -349,47 +338,4 @@ func (r *logViewResource) ImportState(ctx context.Context, req resource.ImportSt
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("app_id"), appID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), logViewID)...)
-}
-
-// logViewLineHeightValue converts the line height AppSignal returned. The
-// attribute defaults to a known value, so a line height the API left out has
-// to read back as that default rather than as null, which would show up as a
-// permanent diff.
-func logViewLineHeightValue(lineHeight *string) types.String {
-	if lineHeight == nil {
-		return types.StringValue(logViewDefaultLineHeight)
-	}
-
-	return types.StringValue(*lineHeight)
-}
-
-// logViewQueryValue converts the query AppSignal returned. The attribute
-// defaults to an empty string, so a query the API left out has to read back as
-// one rather than as null, which would show up as a permanent diff.
-func logViewQueryValue(query *string) types.String {
-	if query == nil {
-		return types.StringValue("")
-	}
-
-	return types.StringValue(*query)
-}
-
-// logViewStringSetValue converts a collection AppSignal returned into a set.
-// A missing collection arrives as nil, which would read back as a null set
-// while the schema defaults it to an empty one, so it is normalised first.
-func logViewStringSetValue(ctx context.Context, values []string) (types.Set, diag.Diagnostics) {
-	if values == nil {
-		values = []string{}
-	}
-
-	return types.SetValueFrom(ctx, types.StringType, values)
-}
-
-// logViewSeveritySetValue does the same for the severities.
-func logViewSeveritySetValue(ctx context.Context, severities []appsignal.LogSeverity) (types.Set, diag.Diagnostics) {
-	if severities == nil {
-		severities = []appsignal.LogSeverity{}
-	}
-
-	return types.SetValueFrom(ctx, types.StringType, severities)
 }

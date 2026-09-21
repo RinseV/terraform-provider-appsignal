@@ -85,19 +85,12 @@ type logTriggerResourceModel struct {
 	NotifierIDs              types.Set    `tfsdk:"notifier_ids"`
 }
 
-// applyLogTrigger copies the values AppSignal owns into the model.
-//
-// The description and the two set attributes are left alone on purpose. They
-// are already correct in the plan, and Terraform requires the applied state to
-// match the plan exactly for every value that is not unknown. Read overwrites
-// them separately, because there drift is what we are looking for.
+// applyLogTrigger copies the values AppSignal owns into the model
 func (m *logTriggerResourceModel) applyLogTrigger(logTrigger *appsignal.LogTrigger) {
 	m.ID = types.StringValue(logTrigger.ID)
 	m.Name = types.StringValue(logTrigger.Name)
 	m.Query = types.StringValue(logTrigger.Query)
 	m.ActionType = types.StringValue(string(logTrigger.ActionType))
-	m.NotificationOptions = logTriggerNotificationOptionValue(logTrigger.NotificationOptions)
-	m.NotificationTriggerValue = types.Int32PointerValue(logTrigger.NotificationTriggerValue)
 	m.Order = types.Int32Value(logTrigger.Order)
 }
 
@@ -307,9 +300,7 @@ func (r *logTriggerResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	ids := make([]string, 0, len(logTrigger.Notifiers))
 	for _, notifier := range logTrigger.Notifiers {
-		if notifier != nil {
-			ids = append(ids, notifier.ID)
-		}
+		ids = append(ids, notifier.ID)
 	}
 	notifierIDs, notifierIDsDiags := types.SetValueFrom(ctx, types.StringType, ids)
 	resp.Diagnostics.Append(notifierIDsDiags...)
@@ -320,12 +311,14 @@ func (r *logTriggerResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	state.applyLogTrigger(logTrigger)
 
-	state.Description = types.StringPointerValue(logTrigger.Description)
-	if state.Description.ValueString() == "" {
-		// A cleared description comes back as an empty string; configuration
-		// expresses that by leaving the attribute out.
-		state.Description = types.StringNull()
+	// A cleared description comes back empty; configuration expresses that by
+	// leaving the attribute out.
+	state.Description = types.StringNull()
+	if logTrigger.Description != "" {
+		state.Description = types.StringValue(logTrigger.Description)
 	}
+	state.NotificationOptions = types.StringValue(string(logTrigger.NotificationOptions))
+	state.NotificationTriggerValue = types.Int32Value(logTrigger.NotificationTriggerValue)
 	state.Severities = severities
 	state.SourceIDs = sourceIDs
 	state.NotifierIDs = notifierIDs
@@ -441,12 +434,4 @@ func logTriggerNotificationOptionPointer(value types.String) *appsignal.LogTrigg
 	option := appsignal.LogTriggerNotificationOption(value.ValueString())
 
 	return &option
-}
-
-func logTriggerNotificationOptionValue(option *appsignal.LogTriggerNotificationOption) types.String {
-	if option == nil {
-		return types.StringNull()
-	}
-
-	return types.StringValue(string(*option))
 }
