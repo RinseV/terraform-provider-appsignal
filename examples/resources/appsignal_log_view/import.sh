@@ -1,0 +1,1 @@
+terraform import appsignal_log_view.example "<app_id>,<log_view_id>"

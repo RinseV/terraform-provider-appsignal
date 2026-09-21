@@ -26,7 +26,8 @@ func NewAppNotifiersDataSource() datasource.DataSource {
 
 // appNotifiersDataSource is the data source implementation.
 type appNotifiersDataSource struct {
-	client *appsignal.Client
+	client           *appsignal.Client
+	organizationSlug string
 }
 
 type appNotifiersDataSourceModel struct {
@@ -60,6 +61,7 @@ func (d *appNotifiersDataSource) Configure(_ context.Context, req datasource.Con
 	}
 
 	d.client = providerData.client
+	d.organizationSlug = providerData.organizationSlug
 }
 
 // Metadata returns the data source type name.

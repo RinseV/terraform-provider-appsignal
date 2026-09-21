@@ -218,5 +218,6 @@ func (p *appsignalProvider) Resources(_ context.Context) []func() resource.Resou
 		NewAppResource,
 		NewLogSourceResource,
 		NewLogTriggerResource,
+		NewLogViewResource,
 	}
 }
