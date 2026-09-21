@@ -62,6 +62,9 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
+  # release-please has already created the GitHub release with the changelog,
+  # so add the build artifacts to it instead of creating a new one.
+  mode: append
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'

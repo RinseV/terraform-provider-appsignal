@@ -1,25 +1,46 @@
 # Terraform Provider release workflow.
 name: Release
 
-# This GitHub action creates a release when a tag that matches the pattern
-# "v*" (e.g. v0.1.0) is created.
+# release-please maintains a release pull request on main. Merging that PR
+# bumps the version, updates CHANGELOG.md, and creates the tag and GitHub
+# release. GoReleaser then builds the provider binaries and attaches them to
+# that release.
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
+# release-please needs to create branches, pull requests, tags and releases.
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
   goreleaser:
+    needs: release-please
+    # Only build when merging the release PR actually cut a release. Running
+    # GoReleaser in the same workflow avoids the GitHub rule that a tag pushed
+    # with GITHUB_TOKEN does not trigger another workflow.
+    if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          # Allow goreleaser to access older tag information.
+          # Check out the tag release-please just created, and allow goreleaser
+          # to access older tag information.
+          ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
