@@ -3,7 +3,7 @@ module terraform-provider-appsignal
 go 1.27.1
 
 require (
-	github.com/RinseV/appsignal-client-go v0.0.0-00010101000000-000000000000
+	github.com/RinseV/appsignal-client-go v0.1.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
@@ -62,5 +62,3 @@ require (
 	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/RinseV/appsignal-client-go => ../appsignal-client-go
