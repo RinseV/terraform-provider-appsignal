@@ -15,22 +15,22 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ datasource.DataSource              = &appNotifiersDataSource{}
-	_ datasource.DataSourceWithConfigure = &appNotifiersDataSource{}
+	_ datasource.DataSource              = &notifiersDataSource{}
+	_ datasource.DataSourceWithConfigure = &notifiersDataSource{}
 )
 
-// NewAppNotifiersDataSource is a helper function to simplify the provider implementation.
-func NewAppNotifiersDataSource() datasource.DataSource {
-	return &appNotifiersDataSource{}
+// NewNotifiersDataSource is a helper function to simplify the provider implementation.
+func NewNotifiersDataSource() datasource.DataSource {
+	return &notifiersDataSource{}
 }
 
-// appNotifiersDataSource is the data source implementation.
-type appNotifiersDataSource struct {
+// notifiersDataSource is the data source implementation.
+type notifiersDataSource struct {
 	client           *appsignal.Client
 	organizationSlug string
 }
 
-type appNotifiersDataSourceModel struct {
+type notifiersDataSourceModel struct {
 	AppID     types.String                 `tfsdk:"app_id"`
 	Name      types.String                 `tfsdk:"name"`
 	Notifiers []appNotifierDataSourceModel `tfsdk:"notifiers"`
@@ -43,7 +43,7 @@ type appNotifierDataSourceModel struct {
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *appNotifiersDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *notifiersDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.
 	if req.ProviderData == nil {
@@ -65,12 +65,12 @@ func (d *appNotifiersDataSource) Configure(_ context.Context, req datasource.Con
 }
 
 // Metadata returns the data source type name.
-func (d *appNotifiersDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_app_notifiers"
+func (d *notifiersDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_notifiers"
 }
 
 // Schema defines the schema for the data source.
-func (d *appNotifiersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *notifiersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to look up the notifiers of an existing app, optionally filtered by name.",
 		Attributes: map[string]schema.Attribute{
@@ -107,8 +107,8 @@ func (d *appNotifiersDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *appNotifiersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state appNotifiersDataSourceModel
+func (d *notifiersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state notifiersDataSourceModel
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)

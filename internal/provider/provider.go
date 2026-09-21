@@ -207,7 +207,7 @@ func (p *appsignalProvider) DataSources(_ context.Context) []func() datasource.D
 	return []func() datasource.DataSource{
 		NewViewerDataSource,
 		NewAppDataSource,
-		NewAppNotifiersDataSource,
+		NewNotifiersDataSource,
 		NewLogSourceDataSource,
 		NewOrganizationDataSource,
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAppNotifiersDataSource(t *testing.T) {
+func TestAccNotifiersDataSource(t *testing.T) {
 	testAccPreCheck(t)
 
 	resource.Test(t, resource.TestCase{
@@ -17,20 +17,20 @@ func TestAccAppNotifiersDataSource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Read testing without a name filter.
 			{
-				Config: providerConfig + `data "appsignal_app_notifiers" "test" { app_id = "6aad24d1ba6bc351255e7cb5" }`,
+				Config: providerConfig + `data "appsignal_notifiers" "test" { app_id = "6aad24d1ba6bc351255e7cb5" }`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.appsignal_app_notifiers.test", "app_id", "6aad24d1ba6bc351255e7cb5"),
-					resource.TestCheckResourceAttrSet("data.appsignal_app_notifiers.test", "notifiers.#"),
+					resource.TestCheckResourceAttr("data.appsignal_notifiers.test", "app_id", "6aad24d1ba6bc351255e7cb5"),
+					resource.TestCheckResourceAttrSet("data.appsignal_notifiers.test", "notifiers.#"),
 				),
 			},
 			// A name that matches nothing returns an empty list rather than an error.
 			{
-				Config: providerConfig + `data "appsignal_app_notifiers" "test" {
+				Config: providerConfig + `data "appsignal_notifiers" "test" {
   app_id = "6aad24d1ba6bc351255e7cb5"
   name   = "no-notifier-has-this-name"
 }`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.appsignal_app_notifiers.test", "notifiers.#", "0"),
+					resource.TestCheckResourceAttr("data.appsignal_notifiers.test", "notifiers.#", "0"),
 				),
 			},
 		},
