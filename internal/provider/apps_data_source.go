@@ -29,14 +29,14 @@ func NewAppsDataSource() datasource.DataSource {
 type appsDataSource struct {
 	client *appsignal.Client
 
-	// organizationSlug is the organization to list the apps of, configured on
-	// the provider.
-	organizationSlug string
+	// organization is the slug of the organization to list the apps of,
+	// configured on the provider.
+	organization string
 }
 
 type appsDataSourceModel struct {
-	OrganizationSlug types.String                              `tfsdk:"organization_slug"`
-	Apps             map[string]organizationAppDataSourceModel `tfsdk:"apps"`
+	Organization types.String                              `tfsdk:"organization"`
+	Apps         map[string]organizationAppDataSourceModel `tfsdk:"apps"`
 }
 
 type organizationAppDataSourceModel struct {
@@ -66,7 +66,7 @@ func (d *appsDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 	}
 
 	d.client = providerData.client
-	d.organizationSlug = providerData.organizationSlug
+	d.organization = providerData.organization
 }
 
 // Metadata returns the data source type name.
@@ -79,7 +79,7 @@ func (d *appsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to look up every app of the organization configured on the provider.",
 		Attributes: map[string]schema.Attribute{
-			"organization_slug": schema.StringAttribute{
+			"organization": schema.StringAttribute{
 				Description: "The slug of the organization the apps were listed from, as configured on the provider.",
 				Computed:    true,
 			},
@@ -125,7 +125,7 @@ func (d *appsDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	apps, err := d.client.GetOrganizationApps(ctx, d.organizationSlug)
+	apps, err := d.client.GetOrganizationApps(ctx, d.organization)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AppSignal Organization Apps",
@@ -134,7 +134,7 @@ func (d *appsDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	state.OrganizationSlug = types.StringValue(d.organizationSlug)
+	state.Organization = types.StringValue(d.organization)
 
 	// Keying by ID rather than returning a list keeps the map stable when the
 	// API changes the order it returns the apps in, so a reorder does not show

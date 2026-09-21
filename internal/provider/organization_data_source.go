@@ -23,9 +23,9 @@ func NewOrganizationDataSource() datasource.DataSource { return &organizationDat
 type organizationDataSource struct {
 	client *appsignal.Client
 
-	// organizationSlug is the organization to look up, configured on the
-	// provider.
-	organizationSlug string
+	// organization is the slug of the organization to look up, configured on
+	// the provider.
+	organization string
 }
 
 type organizationDataSourceModel struct {
@@ -53,7 +53,7 @@ func (d *organizationDataSource) Configure(_ context.Context, req datasource.Con
 	}
 
 	d.client = providerData.client
-	d.organizationSlug = providerData.organizationSlug
+	d.organization = providerData.organization
 }
 
 // Metadata returns the data source type name.
@@ -92,7 +92,7 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	organization, err := d.client.GetOrganization(ctx, d.organizationSlug)
+	organization, err := d.client.GetOrganization(ctx, d.organization)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read AppSignal Organization",
@@ -102,7 +102,7 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	state = organizationDataSourceModel{
-		Slug: types.StringValue(d.organizationSlug),
+		Slug: types.StringValue(d.organization),
 		ID:   types.StringValue(organization.ID),
 		Name: types.StringValue(organization.Name),
 	}

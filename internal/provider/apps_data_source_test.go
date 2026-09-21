@@ -19,7 +19,7 @@ func TestAccAppsDataSource(t *testing.T) {
 			{
 				Config: providerConfig + `data "appsignal_apps" "test" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.appsignal_apps.test", "organization_slug", "terraform-test"),
+					resource.TestCheckResourceAttr("data.appsignal_apps.test", "organization", "terraform-test"),
 					resource.TestCheckResourceAttrSet("data.appsignal_apps.test", "apps.%"),
 				),
 			},

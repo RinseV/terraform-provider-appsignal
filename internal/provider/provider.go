@@ -41,14 +41,17 @@ type appsignalProvider struct {
 
 // appsignalProviderModel maps provider schema data to a Go type.
 type appsignalProviderModel struct {
-	Host             types.String `tfsdk:"host"`
-	Token            types.String `tfsdk:"token"`
-	OrganizationSlug types.String `tfsdk:"organization_slug"`
+	Host         types.String `tfsdk:"host"`
+	Token        types.String `tfsdk:"token"`
+	Organization types.String `tfsdk:"organization"`
 }
 
 type appsignalProviderData struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client *appsignal.Client
+
+	// organization is the slug of the organization every data source and
+	// resource works in, configured on the provider.
+	organization string
 }
 
 // Metadata returns the provider type name.
@@ -70,8 +73,8 @@ func (p *appsignalProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 				Optional:    true,
 				Sensitive:   true,
 			},
-			"organization_slug": schema.StringAttribute{
-				Description: "Slug of the organization to manage. Every data source and resource works in this organization. May also be provided via APPSIGNAL_ORGANIZATION_SLUG environment variable.",
+			"organization": schema.StringAttribute{
+				Description: "Slug of the organization to manage, not its display name. The slug is the organization part of the AppSignal URL: for `https://appsignal.com/my-org`, the slug is `my-org`. Every data source and resource works in this organization. May also be provided via APPSIGNAL_ORGANIZATION environment variable.",
 				Optional:    true,
 			},
 		},
@@ -101,12 +104,12 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
-	if config.OrganizationSlug.IsUnknown() {
+	if config.Organization.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("organization_slug"),
-			"Unknown AppSignal Organization Slug",
+			path.Root("organization"),
+			"Unknown AppSignal Organization",
 			"The provider cannot create the AppSignal API client as there is an unknown configuration value for the AppSignal organization slug. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the APPSIGNAL_ORGANIZATION_SLUG environment variable.",
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the APPSIGNAL_ORGANIZATION environment variable.",
 		)
 	}
 
@@ -128,7 +131,7 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 
 	host := os.Getenv("APPSIGNAL_HOST")
 	token := os.Getenv("APPSIGNAL_TOKEN")
-	organizationSlug := os.Getenv("APPSIGNAL_ORGANIZATION_SLUG")
+	organization := os.Getenv("APPSIGNAL_ORGANIZATION")
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -138,8 +141,8 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		token = config.Token.ValueString()
 	}
 
-	if !config.OrganizationSlug.IsNull() {
-		organizationSlug = config.OrganizationSlug.ValueString()
+	if !config.Organization.IsNull() {
+		organization = config.Organization.ValueString()
 	}
 
 	// If any of the expected configurations are missing, return
@@ -165,12 +168,12 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
-	if organizationSlug == "" {
+	if organization == "" {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("organization_slug"),
-			"Missing AppSignal Organization Slug",
+			path.Root("organization"),
+			"Missing AppSignal Organization",
 			"The provider cannot manage AppSignal resources as there is a missing or empty value for the AppSignal organization slug. "+
-				"Set the organization_slug value in the configuration or use the APPSIGNAL_ORGANIZATION_SLUG environment variable. "+
+				"Set the organization value in the configuration or use the APPSIGNAL_ORGANIZATION environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
@@ -181,7 +184,7 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 
 	ctx = tflog.SetField(ctx, "appsignal_host", host)
 	ctx = tflog.SetField(ctx, "appsignal_token", token)
-	ctx = tflog.SetField(ctx, "appsignal_organization_slug", organizationSlug)
+	ctx = tflog.SetField(ctx, "appsignal_organization", organization)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "appsignal_token")
 
 	tflog.Debug(ctx, "Creating AppSignal client")
@@ -189,11 +192,11 @@ func (p *appsignalProvider) Configure(ctx context.Context, req provider.Configur
 	// Create a new AppSignal client using the configuration values
 	client := appsignal.NewClient(host, token)
 
-	// Make the AppSignal client and the default organization slug available
-	// during DataSource and Resource type Configure methods.
+	// Make the AppSignal client and the organization slug available during
+	// DataSource and Resource type Configure methods.
 	providerData := &appsignalProviderData{
-		client:           client,
-		organizationSlug: organizationSlug,
+		client:       client,
+		organization: organization,
 	}
 
 	resp.DataSourceData = providerData

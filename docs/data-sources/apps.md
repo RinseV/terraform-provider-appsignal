@@ -34,7 +34,7 @@ resource "appsignal_log_source" "default" {
 ### Read-Only
 
 - `apps` (Attributes Map) Every app of the organization, keyed by app ID. (see [below for nested schema](#nestedatt--apps))
-- `organization_slug` (String) The slug of the organization the apps were listed from, as configured on the provider.
+- `organization` (String) The slug of the organization the apps were listed from, as configured on the provider.
 
 <a id="nestedatt--apps"></a>
 ### Nested Schema for `apps`

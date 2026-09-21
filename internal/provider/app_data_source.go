@@ -31,8 +31,8 @@ func NewAppDataSource() datasource.DataSource {
 
 // appDataSource is the data source implementation.
 type appDataSource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 type appDataSourceModel struct {
@@ -62,7 +62,7 @@ func (d *appDataSource) Configure(_ context.Context, req datasource.ConfigureReq
 	}
 
 	d.client = providerData.client
-	d.organizationSlug = providerData.organizationSlug
+	d.organization = providerData.organization
 }
 
 // Metadata returns the data source type name.
@@ -184,7 +184,7 @@ func (d *appDataSource) readByID(ctx context.Context, id string, diags *diag.Dia
 // organization by its name and environment combination, which is unique per
 // organization.
 func (d *appDataSource) readByNameAndEnvironment(ctx context.Context, name string, environment string, diags *diag.Diagnostics) *appsignal.App {
-	apps, err := d.client.GetOrganizationApps(ctx, d.organizationSlug)
+	apps, err := d.client.GetOrganizationApps(ctx, d.organization)
 	if err != nil {
 		diags.AddError(
 			"Unable to Read AppSignal Organization Apps",
@@ -201,7 +201,7 @@ func (d *appDataSource) readByNameAndEnvironment(ctx context.Context, name strin
 
 	diags.AddError(
 		"AppSignal App Not Found",
-		fmt.Sprintf("No app with name %q and environment %q was found in organization %q.", name, environment, d.organizationSlug),
+		fmt.Sprintf("No app with name %q and environment %q was found in organization %q.", name, environment, d.organization),
 	)
 	return nil
 }

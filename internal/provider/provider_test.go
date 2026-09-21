@@ -22,7 +22,7 @@ import (
 const providerConfig = `
 provider "appsignal" {
   host              = "https://appsignal.com/graphql"
-  organization_slug = "terraform-test"
+  organization = "terraform-test"
 }
 `
 

@@ -31,8 +31,8 @@ func NewAppResource() resource.Resource {
 
 // appResource is the resource implementation.
 type appResource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 type appResourceModel struct {
@@ -63,7 +63,7 @@ func (r *appResource) Configure(_ context.Context, req resource.ConfigureRequest
 	}
 
 	r.client = providerData.client
-	r.organizationSlug = providerData.organizationSlug
+	r.organization = providerData.organization
 }
 
 // Metadata returns the resource type name.
@@ -120,7 +120,7 @@ func (r *appResource) Create(ctx context.Context, req resource.CreateRequest, re
 	var input appsignal.CreateAppInput
 	input.Name = plan.Name.ValueString()
 	input.Environment = plan.Environment.ValueString()
-	input.OrganizationSlug = r.organizationSlug
+	input.OrganizationSlug = r.organization
 
 	app, err := r.client.CreateApp(ctx, input)
 	if err != nil {

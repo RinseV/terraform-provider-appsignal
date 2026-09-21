@@ -33,8 +33,8 @@ func NewLogSourceResource() resource.Resource {
 
 // logSourceResource is the resource implementation.
 type logSourceResource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 var logSourceFormats = []string{
@@ -73,7 +73,7 @@ func (r *logSourceResource) Configure(_ context.Context, req resource.ConfigureR
 	}
 
 	r.client = providerData.client
-	r.organizationSlug = providerData.organizationSlug
+	r.organization = providerData.organization
 }
 
 // Metadata returns the resource type name.

@@ -26,8 +26,8 @@ func NewLogSourceDataSource() datasource.DataSource {
 
 // logSourceDataSource is the data source implementation.
 type logSourceDataSource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 type logSourceDataSourceModel struct {
@@ -58,7 +58,7 @@ func (d *logSourceDataSource) Configure(_ context.Context, req datasource.Config
 	}
 
 	d.client = providerData.client
-	d.organizationSlug = providerData.organizationSlug
+	d.organization = providerData.organization
 }
 
 // Metadata returns the data source type name.

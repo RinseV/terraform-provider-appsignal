@@ -38,8 +38,8 @@ func NewLogTriggerResource() resource.Resource {
 
 // logTriggerResource is the resource implementation
 type logTriggerResource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 var logTriggerActionTypes = []string{
@@ -114,7 +114,7 @@ func (r *logTriggerResource) Configure(_ context.Context, req resource.Configure
 	}
 
 	r.client = providerData.client
-	r.organizationSlug = providerData.organizationSlug
+	r.organization = providerData.organization
 }
 
 // Metadata returns the resource type name.

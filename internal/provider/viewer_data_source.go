@@ -26,8 +26,8 @@ func NewViewerDataSource() datasource.DataSource {
 
 // viewerDataSource is the data source implementation.
 type viewerDataSource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 type viewerDataSourceModel struct {
@@ -55,7 +55,7 @@ func (d *viewerDataSource) Configure(_ context.Context, req datasource.Configure
 	}
 
 	d.client = providerData.client
-	d.organizationSlug = providerData.organizationSlug
+	d.organization = providerData.organization
 }
 
 // Metadata returns the data source type name.

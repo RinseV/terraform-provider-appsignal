@@ -34,8 +34,8 @@ func NewLogViewResource() resource.Resource { return &logViewResource{} }
 
 // logViewResource is the resource implementation
 type logViewResource struct {
-	client           *appsignal.Client
-	organizationSlug string
+	client       *appsignal.Client
+	organization string
 }
 
 const logViewDefaultLineHeight = "0"
@@ -90,7 +90,7 @@ func (r *logViewResource) Configure(_ context.Context, req resource.ConfigureReq
 	}
 
 	r.client = providerData.client
-	r.organizationSlug = providerData.organizationSlug
+	r.organization = providerData.organization
 }
 
 // Metadata returns the resource type name.
