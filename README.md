@@ -1,5 +1,8 @@
 # Terraform Provider for AppSignal
 
+> [!IMPORTANT]
+> This package has been moved to [Drieam/terraform-provider-appsignal](https://github.com/Drieam/terraform-provider-appsignal). Please use that one instead.
+
 Manage [AppSignal](https://appsignal.com) apps, log sources, log views and log
 triggers with Terraform.
 
